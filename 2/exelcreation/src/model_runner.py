@@ -44,17 +44,3 @@ def train_and_evaluate_model(library, function, x_train, x_test, y_train, y_test
 
     metrics["model"] = model
     return metrics
-
-
-
-
-
-def evaluate_model(model, X_train, y_train, X_test, y_test, task_type):
-    model.fit(X_train, y_train)
-    y_pred = model.predict(X_test)
-    if task_type == 'regression':
-      rmse = np.sqrt(mean_squared_error(y_test, y_pred))
-      return rmse  # We return RMSE as the error to minimize
-    else:  # classification
-      accuracy = accuracy_score(y_test, y_pred)
-      return 1 - accuracy  # Error to minimize

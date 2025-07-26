@@ -1,13 +1,11 @@
-import pandas as pd
 import numpy as np
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score
 from scipy.special import gamma
-import random
+from src.data_loader import load_data
+from src.preprocess import split_and_scale
 
 def HPO_runner(
     file_path,
-    target_column='Fraudulent',
+    target_column=None,
     model=None,  # Accept model object directly
     params=None,  # Accept hyperparameters as a dictionary of ranges
     SearchAgents=5,
@@ -17,10 +15,8 @@ def HPO_runner(
     random_state=42
 ):
     # === Load and prepare data ===
-    data = pd.read_excel(file_path)
-    X = data.drop(columns=target_column)
-    y = data[target_column]
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state)
+    X, y = load_data(file_path, target_column)
+    X_train, X_test, y_train, y_test = split_and_scale(X, y, test_size=test_size, random_state=random_state)
 
     # === Levy Flight Function ===
     def levy(n, m, beta=1.5):
@@ -51,6 +47,7 @@ def HPO_runner(
 
     # === Model Evaluation Function ===
     from sklearn.metrics import accuracy_score, mean_squared_error
+
 
     def evaluate_model(model, X_train, y_train, X_test, y_test, task_type):
         model.fit(X_train, y_train)
@@ -86,6 +83,8 @@ def HPO_runner(
         best_pos = Positions[best_idx].copy()
         best_fit = fitness[best_idx]
 
+        convergence_curve = [best_fit]  # Track best error at each iteration
+
         # Start optimization loop
         for t in range(Max_iterations):
             steps = levy(SearchAgents, dimension)
@@ -102,11 +101,13 @@ def HPO_runner(
                     if new_fit < best_fit:
                         best_fit = new_fit
                         best_pos = Positions[i].copy()
+            convergence_curve.append(best_fit)  # Save best error after this iteration
 
-        return best_fit, best_pos, 1 - best_fit  # Return best error (1 - accuracy)
+        # Return best_fit (RMSE for regression, error for classification), best_pos, convergence_curve
+        return best_fit, best_pos, convergence_curve
 
     # === Run Optimization ===
-    best_error, best_param_array, best_accuracy = HPO(
+    best_fit, best_param_array, convergence_curve = HPO(
         SearchAgents, Max_iterations, 
         param_ranges=params, 
         model=model, 
@@ -114,11 +115,36 @@ def HPO_runner(
         X_test=X_test, y_test=y_test
     )
 
-    # === Output Best Parameters and Accuracy ===
-    best_params = {list(params.keys())[i]: best_param_array[i] for i in range(len(params))}
-    print(f"Best Parameters for {model.__class__.__name__}: {best_params}")
-    print(f"Best Accuracy: {best_accuracy:.4f}")
-    
-    if task_type == 'regression':
-        return best_params, best_accuracy
+    # --- Convert numpy types to native Python types ---
+    def to_native(val):
+        if isinstance(val, np.generic):
+            return val.item()
+        if isinstance(val, dict):
+            return {k: to_native(v) for k, v in val.items()}
+        if isinstance(val, (list, tuple, np.ndarray)):
+            return [to_native(x) for x in val]
+        return val
 
+    best_params = {list(params.keys())[i]: best_param_array[i] for i in range(len(params))}
+    best_params = to_native(best_params)
+    best_fit = to_native(best_fit)
+    convergence_curve = to_native(convergence_curve)
+
+    print(f"Best Parameters for {model.__class__.__name__}: {best_params}")
+
+    if task_type == "regression":
+        print(f"Best RMSE: {best_fit:.4f}")
+        return best_params, best_fit, convergence_curve
+        library=model_library,
+        function=model_function,
+        x_train=x_train,
+        x_test=x_test,
+        y_train=y_train,
+        y_test=y_test,
+        attributes=model_params
+    else:
+        best_accuracy = 1 - best_fit
+        print(f"Best Accuracy: {best_accuracy:.4f}")
+        # Convert convergence_curve from error to accuracy for user clarity
+        accuracy_curve = [1 - e for e in convergence_curve]
+        return best_params, best_accuracy, accuracy_curve
