@@ -11,6 +11,7 @@ from scipy.integrate import simpson
 from sklearn.metrics import accuracy_score,recall_score,f1_score,confusion_matrix,r2_score,precision_score
 from scipy import stats
 
+
 def MAGEFunc(predictions, actuals):
     # Ensure the inputs are numpy arrays
     predictions = np.array(predictions)
