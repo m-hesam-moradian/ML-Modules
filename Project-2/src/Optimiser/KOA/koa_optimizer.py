@@ -1,9 +1,9 @@
 import numpy as np
 
-def koa_optimizer(objective_function, lb, ub, dim, n_agents, max_iter, X, y):
-    # مقداردهی اولیه جمعیت
+
+def koa_optimizer(objective_function, lb, ub, dim, n_agents, max_iter, X_train, y_train, X_test, y_test):
     pos = np.random.uniform(low=lb, high=ub, size=(n_agents, dim))
-    fit = np.array([objective_function(ind, X, y) for ind in pos])
+    fit = np.array([objective_function(ind, X_train, y_train, X_test, y_test) for ind in pos])
 
     best_idx = np.argmin(fit)
     best_pos = pos[best_idx].copy()
@@ -17,7 +17,8 @@ def koa_optimizer(objective_function, lb, ub, dim, n_agents, max_iter, X, y):
             new_pos = pos[i] + step
 
             new_pos = np.clip(new_pos, lb, ub)
-            new_fit = objective_function(new_pos, X, y)
+            new_fit = objective_function(new_pos, X_train, y_train, X_test, y_test)
+         
 
             if new_fit < fit[i]:
                 pos[i] = new_pos
@@ -30,3 +31,4 @@ def koa_optimizer(objective_function, lb, ub, dim, n_agents, max_iter, X, y):
         print(f"🔁 Iter {t+1}/{max_iter} - Best MAE: {best_fit:.5f}")
 
     return best_pos, best_fit
+
