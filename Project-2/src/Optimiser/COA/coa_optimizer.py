@@ -1,16 +1,30 @@
 import numpy as np
 
+
 def p_obj(x, t, T):
     C = 0.2
     Q = 3
-    return C * (1 / (np.sqrt(2 * np.pi) * Q)) * np.exp(-((x - 25) ** 2) / (2 * Q ** 2))
+    return C * (1 / (np.sqrt(2 * np.pi) * Q)) * np.exp(-((x - 25) ** 2) / (2 * Q**2))
 
-def coa_optimizer(objective_function, lb, ub, dim, n_agents, max_iter, X_train, y_train, X_test, y_test):
+
+def coa_optimizer(
+    objective_function,
+    lb,
+    ub,
+    dim,
+    n_agents,
+    max_iter,
+    X_train,
+    y_train,
+    X_test,
+    y_test,
+):
     thres = 0.5
     X = np.random.uniform(lb, ub, size=(n_agents, dim))
     fitness_f = np.zeros(n_agents)
     best_fitness = np.inf
     best_position = np.zeros(dim)
+    convergence = [best_fitness]
 
     for i in range(n_agents):
         fitness_f[i] = objective_function(X[i], X_train, y_train, X_test, y_test)
@@ -44,12 +58,15 @@ def coa_optimizer(objective_function, lb, ub, dim, n_agents, max_iter, X_train, 
                     Xfood = np.exp(-1 / P) * Xfood
                     for j in range(dim):
                         angle = 2 * np.pi * np.random.rand()
-                        Xnew[i][j] = (X[i][j] +
-                                     np.cos(angle) * Xfood[j] * p_obj(temp, t, max_iter) -
-                                     np.sin(angle) * Xfood[j] * p_obj(temp, t, max_iter))
+                        Xnew[i][j] = (
+                            X[i][j]
+                            + np.cos(angle) * Xfood[j] * p_obj(temp, t, max_iter)
+                            - np.sin(angle) * Xfood[j] * p_obj(temp, t, max_iter)
+                        )
                 else:
-                    Xnew[i] = ((X[i] - Xfood) * p_obj(temp, t, max_iter) +
-                               p_obj(temp, t, max_iter) * np.random.rand(dim) * X[i])
+                    Xnew[i] = (X[i] - Xfood) * p_obj(temp, t, max_iter) + p_obj(
+                        temp, t, max_iter
+                    ) * np.random.rand(dim) * X[i]
 
         Xnew = np.clip(Xnew, lb, ub)
 
@@ -67,6 +84,7 @@ def coa_optimizer(objective_function, lb, ub, dim, n_agents, max_iter, X_train, 
                     best_fitness = fitness_f[i]
                     best_position = X[i].copy()
 
+        convergence.append(best_fitness)
         print(f"🦞 Iter {t}/{max_iter} - Best MAE: {best_fitness:.5f}")
 
-    return best_position, best_fitness
+    return best_position, best_fitness, convergence

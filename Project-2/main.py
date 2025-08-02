@@ -10,6 +10,7 @@ from src.Utils.K_Fold import K_Fold
 from src.Optimiser.KOA.koa_optimizer import koa_optimizer
 from src.Optimiser.COA.coa_optimizer import coa_optimizer
 from objective_function import objective_et, objective_lasso
+from src.Utils.get_optimizer_report import get_optimizer_report
 
 # Timer dictionary
 timings = {}
@@ -77,7 +78,7 @@ timings["train_baseline_models"] = time.time() - start
 
 # KOA optimization
 start = time.time()
-best_pos_et_koa, best_fit_et_koa = koa_optimizer(
+best_pos_et_koa, best_fit_et_koa, convergence_et_koa = koa_optimizer(
     objective_et,
     lb_et,
     ub_et,
@@ -89,7 +90,7 @@ best_pos_et_koa, best_fit_et_koa = koa_optimizer(
     X_test,
     y_test,
 )
-best_pos_lasso_koa, best_fit_lasso_koa = koa_optimizer(
+best_pos_lasso_koa, best_fit_lasso_koa, convergence_lasso_koa = koa_optimizer(
     objective_lasso,
     lb_lasso,
     ub_lasso,
@@ -116,7 +117,7 @@ n_agents_lasso = 100
 max_iter_lasso = 20
 
 start = time.time()
-best_pos_et_coa, best_fit_et_coa = coa_optimizer(
+best_pos_et_coa, best_fit_et_coa, convergence_et_coa = coa_optimizer(
     objective_et,
     lb_et,
     ub_et,
@@ -128,7 +129,7 @@ best_pos_et_coa, best_fit_et_coa = coa_optimizer(
     X_test,
     y_test,
 )
-best_pos_lasso_coa, best_fit_lasso_coa = coa_optimizer(
+best_pos_lasso_coa, best_fit_lasso_coa, convergence_lasso_coa = coa_optimizer(
     objective_lasso,
     lb_lasso,
     ub_lasso,
@@ -141,6 +142,58 @@ best_pos_lasso_coa, best_fit_lasso_coa = coa_optimizer(
     y_test,
 )
 timings["coa_optimization"] = time.time() - start
+
+
+optimizer_results = {}
+# 🧪 Run and store optimizer reports
+optimizer_results["etr_koa"] = get_optimizer_report(
+    "ETR_KOA",
+    "ETR",
+    best_pos_et_koa,
+    best_fit_et_koa,
+    X_train,
+    y_train,
+    X_test,
+    y_test,
+    convergence_et_koa,
+)
+
+optimizer_results["lasso_koa"] = get_optimizer_report(
+    "Lasso_KOA",
+    "LR",
+    best_pos_lasso_koa,
+    best_fit_lasso_koa,
+    X_train,
+    y_train,
+    X_test,
+    y_test,
+    convergence_lasso_koa,
+)
+
+
+optimizer_results["etr_coa"] = get_optimizer_report(
+    "ETR_COA",
+    "ETR",
+    best_pos_et_coa,
+    best_fit_et_coa,
+    X_train,
+    y_train,
+    X_test,
+    y_test,
+    convergence_et_coa,
+)
+
+optimizer_results["lasso_coa"] = get_optimizer_report(
+    "Lasso_COA",
+    "LR",
+    best_pos_lasso_coa,
+    best_fit_lasso_coa,
+    X_train,
+    y_train,
+    X_test,
+    y_test,
+    convergence_lasso_coa,
+)
 
 # Output timing summary
 print("📊 Processing Time Summary (seconds):")

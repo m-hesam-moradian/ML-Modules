@@ -60,6 +60,80 @@ def train_raw_model(model_name, X_train, y_train, X_test, y_test):
     }
 
 
+from sklearn.ensemble import ExtraTreesRegressor
+from sklearn.linear_model import Lasso
+from sklearn.metrics import mean_absolute_error
+
+from sklearn.ensemble import ExtraTreesRegressor
+from sklearn.linear_model import Lasso
+from sklearn.metrics import mean_absolute_error
+
+
+def train_raw_model(model_name, X_train, y_train, X_test, y_test, params=None):
+    # Apply custom or default parameters
+    if model_name == "ETR":
+        default_params = {
+            "random_state": 42,
+            "n_estimators": 100,
+            "max_depth": 3,
+            "min_samples_split": 5,
+        }
+        if params is not None:
+            mapped_params = {
+                "random_state": 42,
+                "n_estimators": int(params[0]),
+                "max_depth": int(params[1]),
+                "min_samples_split": int(params[2]),
+            }
+            final_params = {**default_params, **mapped_params}
+        else:
+            final_params = default_params
+
+        model = ExtraTreesRegressor(**final_params)
+
+    elif model_name == "LR":
+        default_params = {
+            "random_state": 42,
+            "alpha": 0.1,
+            "max_iter": 1000,
+            "tol": 0.01,
+        }
+        if params is not None:
+
+            mapped_params = {
+                "random_state": 42,
+                "alpha": float(params[0]),
+                "max_iter": int(params[1]),
+            }
+            final_params = {**default_params, **mapped_params}
+        else:
+            final_params = default_params
+
+        model = Lasso(**final_params)
+
+    else:
+        raise ValueError("Unsupported model name. Use 'ETR' or 'LR'.")
+
+    # Train the model
+    model.fit(X_train, y_train)
+
+    # Predict on both sets
+    y_pred_train = model.predict(X_train)
+    y_pred_test = model.predict(X_test)
+
+    # MAE on test set
+    mae_error = mean_absolute_error(y_test, y_pred_test)
+
+    return {
+        "model_name": model_name,
+        "model": model,
+        "params": final_params,
+        "mae": mae_error,
+        "y_pred_train": y_pred_train,
+        "y_pred_test": y_pred_test,
+    }
+
+
 def get_X_y(df, target_col="Predicted Load (kW)"):
     """
     Splits the DataFrame into features (X) and target (y)
